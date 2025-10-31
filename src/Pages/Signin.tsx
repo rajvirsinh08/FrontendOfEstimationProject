@@ -48,7 +48,7 @@ const Signin: React.FC = () => {
         alert("Signin successful!");
         console.log("User:", data.user);
           // ✅ Navigate to admin homepage
-        navigate("/adminHomepage");
+navigate("/adminHomepage", { replace: true });
       }
     } catch (err) {
       setError("Server error. Please try again later.");
