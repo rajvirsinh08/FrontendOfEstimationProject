@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Button, Box, Typography } from "@mui/material";
 import axios from "axios";
+import axiosInstance from "../../../axiosInstance";
 
 interface User {
   _id: string;
@@ -20,7 +21,7 @@ export default function UserList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/users/all");
+        const res = await axiosInstance.get("/users/all");
         setUsers(res.data.users);
       } catch (error) {
         console.error("Error fetching users:", error);

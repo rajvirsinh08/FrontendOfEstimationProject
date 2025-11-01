@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios"; // Install axios: npm install axios
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../axiosInstance";
 
 const Signup: React.FC = () => {
     const navigate = useNavigate(); // ✅ Initialize navigate
@@ -12,7 +12,6 @@ const Signup: React.FC = () => {
     password: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,12 +23,9 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/users/signup",
-        form,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+      const response = await axiosInstance.post(
+        "/users/signup",
+        form
       );
 
       alert(response.data.message);
@@ -99,7 +95,7 @@ const Signup: React.FC = () => {
             <div style={styles.passwordWrapper}>
               <input
                 style={{ ...styles.input, flex: 1 }}
-                type={showPassword ? "text" : "password"}
+                type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}

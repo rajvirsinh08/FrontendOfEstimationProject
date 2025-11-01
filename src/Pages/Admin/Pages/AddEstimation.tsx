@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../Store/store";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
@@ -7,6 +6,7 @@ import { GridValueGetter } from "@mui/x-data-grid";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import axiosInstance from "../../../axiosInstance";
 
 const AddEstimation: React.FC = () => {
   const token = useSelector((state: RootState) => state.user.token);
@@ -41,11 +41,7 @@ const AddEstimation: React.FC = () => {
         return;
       }
 
-      const res = await axios.get("http://localhost:5000/api/estimate/my-estimates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await axiosInstance.get("/estimate/my-estimates", {});
 
       if (res.data.success) {
         setEstimates(res.data.data);
@@ -106,11 +102,8 @@ const AddEstimation: React.FC = () => {
       totalCost: Number(formData.totalCost),
       dueDate: formData.dueDate || undefined,
     };
-    await axios.post("http://localhost:5000/api/estimate/add", payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    await axiosInstance.post("/estimate/add", payload, {
+    
     });
     alert("Estimate added successfully!");
   };
@@ -125,11 +118,8 @@ const AddEstimation: React.FC = () => {
       totalCost: Number(formData.totalCost),
       dueDate: formData.dueDate || undefined,
     };
-    await axios.put(`http://localhost:5000/api/estimate/update/${editId}`, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    await axiosInstance.put(`/estimate/update/${editId}`, payload, {
+      
     });
     alert("Estimate updated successfully!");
   };

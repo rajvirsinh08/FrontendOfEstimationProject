@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../Store/store";
 import { setUser } from "../Store/userSlice";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../axiosInstance";
 // import { setUser } from "../store/userSlice";
 // import type { AppDispatch } from "../store/store";
 
@@ -19,45 +20,69 @@ const Signin: React.FC = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setError("");
 
-    try {
-      const response = await fetch("http://localhost:5000/api/users/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+//     try {
+//       const response = await fetch("http://localhost:5000/api/users/signin", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(form),
+//       });
 
-      const data = await response.json();
+//       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || "Signin failed");
-      } else {
-        // Store data in Redux instead of localStorage
-        dispatch(
-          setUser({
-            token: data.token,
-            email: data.user.email,
-            role: data.user.role,
-          })
-        );
+//       if (!response.ok) {
+//         setError(data.message || "Signin failed");
+//       } else {
+//         // Store data in Redux instead of localStorage
+//         dispatch(
+//           setUser({
+//             token: data.token,
+//             email: data.user.email,
+//             role: data.user.role,
+//           })
+//         );
 
-        alert("Signin successful!");
-        console.log("User:", data.user);
-          // ✅ Navigate to admin homepage
-navigate("/adminHomepage", { replace: true });
-      }
-    } catch (err) {
-      setError("Server error. Please try again later.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+//         alert("Signin successful!");
+//         console.log("User:", data.user);
+//           // ✅ Navigate to admin homepage
+// navigate("/adminHomepage", { replace: true });
+//       }
+//     } catch (err) {
+//       setError("Server error. Please try again later.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
+  try {
+    const response = await axiosInstance.post("/users/signin", form); // ✅ not full URL
+    const data = response.data;
+
+    dispatch(setUser({
+      token: data.token,
+      email: data.user.email,
+      role: data.user.role,
+    }));
+
+    alert("Signin successful!");
+    navigate("/adminHomepage", { replace: true });
+
+  } catch (err: any) {
+    console.error(err);
+    setError(err.response?.data?.message || "Signin failed");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div style={styles.page}>
       <div style={styles.card}>
