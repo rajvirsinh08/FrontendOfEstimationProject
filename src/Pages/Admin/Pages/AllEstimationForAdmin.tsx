@@ -56,6 +56,8 @@ const ActionButtons = styled(Box)(() => ({
 }));
 
 const AllEstimationForAdmin: React.FC = () => {
+  const token = useSelector((state: RootState) => state.user.token);
+
   const [estimates, setEstimates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
@@ -64,7 +66,17 @@ const AllEstimationForAdmin: React.FC = () => {
   const [mode, setMode] = useState<"NONE" | "DECLINE" | "REEDIT">("NONE");
   const [adminComment, setAdminComment] = useState("");
 
-  const token = useSelector((state: RootState) => state.user.token);
+const [openReceiptModal, setOpenReceiptModal] = useState(false);
+const [receiptPdf, setReceiptPdf] = useState<string | null>(null);
+
+const handleOpenReceiptModal = (pdfUrl: string) => {
+  if (!pdfUrl) {
+    alert("No receipt available for this payment.");
+    return;
+  }
+  setReceiptPdf(pdfUrl);
+  setOpenReceiptModal(true);
+};
 
   const fetchEstimates = async () => {
     try {
@@ -123,68 +135,21 @@ const AllEstimationForAdmin: React.FC = () => {
     setMode("NONE");
     setAdminComment("");
   };
+const handleForwardToAccountant = async (estimateId: string) => {
+  try {
+    const res = await axiosInstance.patch(`/estimate/forward-payment/${estimateId}`);
+    if (res.data.success) {
+      alert("Payment request sent to accountant successfully!");
+      fetchEstimates();
+    } else {
+      alert(res.data.message || "Failed to update payment request.");
+    }
+  } catch (error: any) {
+    console.error("Error forwarding payment request:", error);
+    alert(error.response?.data?.message || "Server error.");
+  }
+};
 
-  // 🟢 Columns
-    // const columns: GridColDef[] = [
-    //   { field: "projectName", headerName: "Project Name", flex: 1.2, minWidth: 180 },
-    //   { field: "projectType", headerName: "Type", flex: 0.8, minWidth: 120 },
-    //   { field: "techStack", headerName: "Tech Stack", flex: 1.2, minWidth: 180 },
-    //   { field: "estimatedHours", headerName: "Est. Hours", width: 120 },
-    //   { field: "hourlyCost", headerName: "Hourly Rate (₹)", width: 150 },
-    //   { field: "totalCost", headerName: "Total Cost (₹)", width: 150 },
-    //   {
-    //     field: "dueDate",
-    //     headerName: "Due Date",
-    //     width: 150,
-    //     valueGetter: ((value) =>
-    //       value ? new Date(value as string).toLocaleDateString() : "—") as GridValueGetter<any, any>,
-    //   },
-    //   { field: "createdBy", headerName: "Created By", width: 180 },
-    //   { field: "status", headerName: "Status", width: 120 },
-    //   {
-    //     field: "action",
-    //     headerName: "Action",
-    //     width: 220,
-    //     renderCell: (params) => {
-    //       const { status, adminComment } = params.row;
-
-    //       if (status === "Approved")
-    //         return (
-    //           <Box display="flex" alignItems="center" gap={1}>
-    //             <CheckCircleIcon sx={{ color: "green" }} />
-    //             <Typography variant="body2" color="green">Approved</Typography>
-    //           </Box>
-    //         );
-
-    //       if (status === "Declined")
-    //         return (
-    //           <Box display="flex" alignItems="center" gap={1}>
-    //             <CancelIcon sx={{ color: "red" }} />
-    //             <Typography variant="body2" color="red">Declined</Typography>
-    //           </Box>
-    //         );
-
-    //       if (status === "ReEdit")
-    //         return (
-    //           <Box display="flex" alignItems="center" gap={1}>
-    //             <EditNoteIcon sx={{ color: "#ff9800" }} />
-    //             <Typography variant="body2" color="#ff9800">ReEdit</Typography>
-    //             {adminComment && (
-    //               <Tooltip title={adminComment} arrow>
-    //                 <InfoIcon sx={{ color: "#888", fontSize: 18, cursor: "pointer" }} />
-    //               </Tooltip>
-    //             )}
-    //           </Box>
-    //         );
-
-    //       return (
-    //         <Button variant="contained" color="primary" onClick={() => handleOpenModal(params.row)}>
-    //           Review
-    //         </Button>
-    //       );
-    //     },
-    //   },
-    // ];
 const columns: GridColDef[] = [
   { field: "projectName", headerName: "Project Name", flex: 1.2, minWidth: 180 },
   { field: "projectType", headerName: "Type", flex: 0.8, minWidth: 120 },
@@ -206,23 +171,9 @@ const columns: GridColDef[] = [
   { field: "createdBy", headerName: "Created By", width: 180 },
   { field: "developerId", headerName: "Developer ID", width: 200 },
   { field: "approvedBy", headerName: "Approved By", width: 180 },
-  // {
-  //   field: "createdAt",
-  //   headerName: "Created On",
-  //   width: 150,
-  //   valueGetter: (value) =>
-  //     value ? new Date(value as string).toLocaleString() : "—",
-  // },
-  // {
-  //   field: "updatedAt",
-  //   headerName: "Updated On",
-  //   width: 150,
-  //   valueGetter: (value) =>
-  //     value ? new Date(value as string).toLocaleString() : "—",
-  // },
+
   { field: "status", headerName: "Status", width: 120 },
   { field: "adminComment", headerName: "Admin Comment", flex: 1, minWidth: 200 },
-  // { field: "declineReason", headerName: "Decline Reason", flex: 1, minWidth: 200 },
   {
     field: "action",
     headerName: "Action",
@@ -268,6 +219,70 @@ const columns: GridColDef[] = [
           Review
         </Button>
       );
+    },
+  },
+    // ✅ Payment Column (status and action)
+  {
+    field: "payment",
+    headerName: "Payment",
+    width: 260,
+    renderCell: (params) => {
+      const { paymentRequest, _id } = params.row;
+
+      if (paymentRequest === "RequestToAdmin") {
+        return (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleForwardToAccountant(_id)}
+            sx={{ backgroundColor: "#1976d2", textTransform: "none", fontWeight: 500 }}
+          >
+            Send to Accountant
+          </Button>
+        );
+      }
+
+      if (paymentRequest === "RequestToAccountant") {
+        return (
+          <Typography variant="body2" sx={{ color: "#ff7a00", fontWeight: 500 }}>
+            Payment request sent to accountant
+          </Typography>
+        );
+      }
+
+      if (paymentRequest === "PaymentDone") {
+        return (
+          <Typography variant="body2" sx={{ color: "green", fontWeight: 600 }}>
+            Payment Completed ✅
+          </Typography>
+        );
+      }
+
+      return <Typography variant="body2">—</Typography>;
+    },
+  },
+
+  // ✅ New Separate Column for Payment Receipt
+  {
+    field: "paymentReceipt",
+    headerName: "Payment Receipt",
+    width: 180,
+    renderCell: (params) => {
+      const { paymentPdf } = params.row;
+
+      if (paymentPdf) {
+        return (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleOpenReceiptModal(paymentPdf)}
+          >
+            View Receipt
+          </Button>
+        );
+      }
+
+      return <Typography variant="body2">—</Typography>;
     },
   },
 ];
@@ -456,6 +471,64 @@ const columns: GridColDef[] = [
     )}
   </ModalBox>
 </Modal>
+{/* 🧾 Receipt Modal */}
+<Modal open={openReceiptModal} onClose={() => setOpenReceiptModal(false)}>
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "80%",
+      height: "80%",
+      backgroundColor: "#fff",
+      boxShadow: 24,
+      borderRadius: 2,
+      p: 2,
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    {/* Header with title and close button */}
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        mb: 2,
+      }}
+    >
+      <Typography variant="h6" fontWeight={600}>
+        Payment Receipt
+      </Typography>
+      <Button
+        onClick={() => setOpenReceiptModal(false)}
+        sx={{
+          color: "white",
+          backgroundColor: "#d32f2f",
+          textTransform: "none",
+          "&:hover": { backgroundColor: "#b71c1c" },
+        }}
+      >
+        Close
+      </Button>
+    </Box>
+
+    {/* PDF Viewer */}
+    {receiptPdf ? (
+      <iframe
+        src={receiptPdf}
+        title="Payment Receipt"
+        width="100%"
+        height="100%"
+        style={{ border: "none", borderRadius: "8px" }}
+      ></iframe>
+    ) : (
+      <Typography>No receipt PDF available.</Typography>
+    )}
+  </Box>
+</Modal>
+
 
     </Container>
   );

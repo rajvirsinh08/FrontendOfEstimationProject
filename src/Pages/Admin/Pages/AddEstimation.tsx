@@ -161,6 +161,20 @@ const AddEstimation: React.FC = () => {
       alert(error.response?.data?.message || "Failed to submit estimation");
     }
   };
+const handlePaymentRequest = async (estimateId: string) => {
+  try {
+    const res = await axiosInstance.patch(`/estimate/payment-request/${estimateId}`);
+    if (res.data.success) {
+      alert("Payment request sent to admin successfully!");
+      fetchEstimates();
+    } else {
+      alert(res.data.message);
+    }
+  } catch (error: any) {
+    console.error("Error sending payment request:", error);
+    alert(error.response?.data?.message || "Failed to send payment request");
+  }
+};
 
   // 🟢 DataGrid Columns
   const columns: GridColDef[] = [
@@ -212,6 +226,48 @@ const AddEstimation: React.FC = () => {
         return null;
       },
     },
+    {
+  field: "payment",
+  headerName: "Payment",
+  width: 250,
+  renderCell: (params) => {
+    const { status, paymentRequest, id } = params.row;
+
+    if (status === "Approved" && paymentRequest === "Pending") {
+      return (
+        <button
+          onClick={() => handlePaymentRequest(id)}
+          style={{
+            backgroundColor: "#28a745",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            padding: "6px 12px",
+            cursor: "pointer",
+            fontSize: "14px",
+          }}
+        >
+          Request Payment
+        </button>
+      );
+    }
+
+    if (paymentRequest === "RequestToAdmin") {
+      return (
+        <span style={{ color: "#ff7a00", fontWeight: "500" }}>
+          Payment request done to admin and payment pending.
+        </span>
+      );
+    }
+
+    if (paymentRequest === "PaymentDone") {
+      return <span style={{ color: "green", fontWeight: "600" }}>Payment Completed ✅</span>;
+    }
+
+    return <span>-</span>;
+  },
+},
+
   ];
 
   const rows = estimates.map((item) => ({
